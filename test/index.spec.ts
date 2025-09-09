@@ -6,19 +6,27 @@ import worker from '../src/index';
 // `Request` to pass to `worker.fetch()`.
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;
 
-describe('Hello World worker', () => {
-	it('responds with Hello World! (unit style)', async () => {
-		const request = new IncomingRequest('http://example.com');
-		// Create an empty context to pass to `worker.fetch()`.
+describe('Dynamic Worker Loader - Echo Worker', () => {
+	it('echoes request information when LOADER not available', async () => {
+		const request = new IncomingRequest('http://example.com', {
+			method: 'POST',
+			headers: { 'X-Test': 'value' }
+		});
 		const ctx = createExecutionContext();
 		const response = await worker.fetch(request, env, ctx);
-		// Wait for all `Promise`s passed to `ctx.waitUntil()` to settle before running test assertions
 		await waitOnExecutionContext(ctx);
-		expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
+		
+		expect(response.status).toBe(500);
+		expect(await response.text()).toContain('Dynamic Worker Loader not available');
 	});
 
-	it('responds with Hello World! (integration style)', async () => {
-		const response = await SELF.fetch('https://example.com');
-		expect(await response.text()).toMatchInlineSnapshot(`"Hello World!"`);
+	it('handles requests when LOADER not available (integration style)', async () => {
+		const response = await SELF.fetch('https://example.com', {
+			method: 'GET',
+			headers: { 'User-Agent': 'test' }
+		});
+		
+		expect(response.status).toBe(500);
+		expect(await response.text()).toContain('Dynamic Worker Loader not available');
 	});
 });

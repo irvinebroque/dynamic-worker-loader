@@ -1,18 +1,25 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.jsonc`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+
+const echoWorker = `
+						export default {
+							async fetch(request, env, ctx) {
+								return new Response('Hello from a dynamically loaded worker!')
+							}
+						};
+					`
 
 export default {
-	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
+	async fetch(request, env, ctx): Promise<Response> {		
+		const worker = env.LOADER.get('echo-worker', () => {
+			return {
+				compatibilityDate: "2025-06-01", 
+				mainModule: "echo.js",
+				modules: {
+					"echo.js": echoWorker
+				}
+			};
+		});
+
+		const entrypoint = worker.getEntrypoint();
+		return entrypoint.fetch(request, env, ctx);
 	},
 } satisfies ExportedHandler<Env>;
